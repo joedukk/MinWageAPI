@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon server.js"
+    "heroku": "nodemon --exec heroku local --signal SIGTERM"
   },
   "author": "joedukk",
   "license": "ISC",
@@ -13,8 +13,9 @@
     "nodemon": "^1.17.5"
   },
   "dependencies": {
+    "cheerio": "latest",
     "express": "^4.16.3",
-    "request": "latest",
-    "cheerio": "latest"
+    "pg": "^7.4.3",
+    "request": "latest"
   }
 }
