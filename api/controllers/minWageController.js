@@ -35,19 +35,25 @@ var parseLastIncrease = function (element, state, locality) {
     return lastIncrease;
 }
 
-var parseUpcomingIncrease = function (element, state, locality) {
+var parseUpcomingIncrease = function (element, state, locality, note) {
     var upcomingIncreasePattern1 = /(.*)(?:, effective )(.*)(?:\*?)/;
     var upcomingIncreasePattern2 = /(.*)(?:, beginning )(.*)(?:\*?)/;
 
     var upcomingIncreases = [];
+    var upcomingIncreasesIndex = null;
     var upcomingIncreasesRaw = element.children('td:nth-child(5)').text();
     if (upcomingIncreasesRaw) {
         var upcomingIncreasesArr = upcomingIncreasesRaw.split('/');
-        var note = upcomingIncreasesArr[upcomingIncreasesArr.length - 1];
-        var hasNote = note.indexOf('indexing') !== -1;
+        
+        var lastIncrease = upcomingIncreasesArr[upcomingIncreasesArr.length - 1];
+        var hasUpcomingIncreaseIndex = false;
+        if (lastIncrease.indexOf('indexing') !== -1) {
+            hasUpcomingIncreaseIndex = true;
+            upcomingIncreasesIndex = note;
+        }
 
         upcomingIncreasesArr.forEach((upcomingIncrease, i) => {
-            if (i === upcomingIncreasesArr.length - 1 && hasNote) {
+            if (hasUpcomingIncreaseIndex && i === upcomingIncreasesArr.length - 1) {
                 return;
             }
 
@@ -58,14 +64,14 @@ var parseUpcomingIncrease = function (element, state, locality) {
             if (upcomingIncreaseMatches1) {
                 upcomingIncreases.push({
                     to: upcomingIncreaseMatches1[1],
-                    effective: upcomingIncreaseMatches1[2].trim(),
-                    note: hasNote ? note : null
+                    effective: upcomingIncreaseMatches1[2].trim().replace('*', ''),
+                    note: upcomingIncreaseMatches1[2].indexOf('*') !== -1 ? note.replace('*', '').trim() : null,
                 });
             } else if (upcomingIncreaseMatches2) {
                 upcomingIncreases.push({
                     to: upcomingIncreaseMatches2[1],
-                    effective: upcomingIncreaseMatches2[2].trim(),
-                    note: hasNote ? note : null
+                    effective: upcomingIncreaseMatches2[2].trim().replace('*', ''),
+                    note: upcomingIncreaseMatches2[2].indexOf('*') !== -1 ? note.replace('*', '').trim() : null,
                 });
             } else {
                 var error = `Could not parse upcoming increase for ${state} / ${locality}. '${upcomingIncrease}'`;
@@ -75,7 +81,10 @@ var parseUpcomingIncrease = function (element, state, locality) {
         })
     }
 
-    return upcomingIncreases;
+    return {
+        upcomingIncreases,
+        upcomingIncreasesIndex
+    };
 }
 
 exports.list_all_minWages = function (req, res) {
@@ -83,30 +92,31 @@ exports.list_all_minWages = function (req, res) {
         // First we'll check to make sure no errors occurred when making the request
         if (!error) {
             // Next, we'll utilize the cheerio library on the returned html which will essentially give us jQuery functionality
-
             var $ = cheerio.load(html);
+
+            var federalMinWage = 7.25;
 
             var dataTable = [];
             $('.data-table-wrapper > table > tbody > tr').each(function (index, element) {
                 try {
                     var state = $(element).find('th').text().trim();
                     var locality = $(element).children('td:nth-child(2)').text().trim() || null;
-                    var minWage = $(element).children('td:nth-child(3)').text();
+                    var minWage = $(element).children('td:nth-child(3)').text() || federalMinWage;
                     var lastIncrease = parseLastIncrease($(element), state, locality);
-                    var upcomingIncrease = parseUpcomingIncrease($(element), state, locality);
+                    var note = $(element).children('td:nth-child(8)').text();
+                    var upcomingIncrease = parseUpcomingIncrease($(element), state, locality, note);
                     var indexing = $(element).children('td:nth-child(6)').text();
                     var lastChange = $(element).children('td:nth-child(7)').text();
-                    var notes = $(element).children('td:nth-child(8)').text();
 
                     dataTable.push({
                         state,
                         locality,
                         minWage,
                         lastIncrease,
-                        upcomingIncrease,
+                        upcomingIncrease: !upcomingIncrease.upcomingIncreases || upcomingIncrease.upcomingIncreases.length === 0 ? null : upcomingIncrease.upcomingIncreases,
+                        // upcomingIncreasesIndex: upcomingIncrease.upcomingIncreasesIndex.trim(),
                         indexing,
                         lastChange,
-                        notes
                     });
                 } catch (err) {
                     console.error(err.message);
