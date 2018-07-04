@@ -90,7 +90,7 @@ exports.list_all_minWages = function (req, res) {
             $('.data-table-wrapper > table > tbody > tr').each(function (index, element) {
                 try {
                     var state = $(element).find('th').text().trim();
-                    var locality = $(element).children('td:nth-child(2)').text().trim();
+                    var locality = $(element).children('td:nth-child(2)').text().trim() || null;
                     var minWage = $(element).children('td:nth-child(3)').text();
                     var lastIncrease = parseLastIncrease($(element), state, locality);
                     var upcomingIncrease = parseUpcomingIncrease($(element), state, locality);
