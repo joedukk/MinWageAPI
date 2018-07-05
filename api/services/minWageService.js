@@ -115,7 +115,7 @@ module.exports = {
                     try {
                         var state = $(element).find('th').text().trim();
                         var locality = $(element).children('td:nth-child(2)').text().trim() || null;
-                        var minWage = +$(element).children('td:nth-child(3)').text() || federalMinWage;
+                        var minWage = +($(element).children('td:nth-child(3)').text().replace('$', '') || federalMinWage);
                         var lastIncrease = parseLastIncrease($(element), state, locality);
                         var note = $(element).children('td:nth-child(8)').text();
                         var upcomingIncrease = parseUpcomingIncrease($(element), state, locality, note);
@@ -125,7 +125,7 @@ module.exports = {
                         const data = [];
 
                         // map epi county mappings
-                        const mappings = countyMappings.filter(countyMapping => countyMapping.state.toLowerCase() === state.toLowerCase() && countyMapping.locality.toLowerCase() === locality.toLowerCase());
+                        const mappings = countyMappings.filter(countyMapping => countyMapping.state.toLowerCase() === state.toLowerCase() && (countyMapping.locality === locality));
                         if (mapCounties && mappings.length > 0) {
                             mappings.forEach(mapping => {
                                 data.push({
