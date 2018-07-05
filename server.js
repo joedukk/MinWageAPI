@@ -10,8 +10,8 @@ const session = require('express-session');
 const strategy = new Auth0Strategy(
   {
     domain: 'joedukk.auth0.com',
-    clientID: '2YsMTRlPzZv218GeL5k64AbG2ojnclix',
-    clientSecret: 'TA4aajxmOR1sHmsyd0VHPyp_6vCuleaWnpNPic0UUwaQIR0foH-5Pcah6kccBWB9',
+    clientID: process.env.AUTH0_CLIENT_ID,
+    clientSecret: process.env.AUTH0_CLIENT_SECRET,
     callbackURL: process.env.AUTH0_CALLBACK_URL || 'http://localhost:5000/callback'
   },
   (accessToken, refreshToken, extraParams, profile, done) => {
