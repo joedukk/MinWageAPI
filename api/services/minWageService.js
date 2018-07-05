@@ -101,7 +101,7 @@ module.exports = {
 
         var errors = [];
 
-        request('https://www.epi.org/minimum-wage-tracker/#/min_wage/', (error, response, html) => {
+        request('https://www.epi.org/minimum-wage-tracker/#/min_wage/', async (error, response, html) => {
             // First we'll check to make sure no errors occurred when making the request
             if (!error) {
                 // Next, we'll utilize the cheerio library on the returned html which will essentially give us jQuery functionality
@@ -110,7 +110,8 @@ module.exports = {
                 var federalMinWage = 7.25;
 
                 var dataTable = [];
-                $('.data-table-wrapper > table > tbody > tr').each(async (index, element) => {
+                const countyMappings = await getCountyMappings();
+                $('.data-table-wrapper > table > tbody > tr').each((index, element) => {
                     try {
                         var state = $(element).find('th').text().trim();
                         var locality = $(element).children('td:nth-child(2)').text().trim() || null;
@@ -124,9 +125,8 @@ module.exports = {
                         const data = [];
 
                         // map epi county mappings
+                        const mappings = countyMappings.filter(countyMapping => countyMapping.state.toLowerCase() === state.toLowerCase() && countyMapping.locality.toLowerCase() === locality.toLowerCase());
                         if (mapCounties && mappings.length > 0) {
-                            const countyMappings = await getCountyMappings();
-                            const mappings = countyMappings.filter(countyMapping => countyMapping.state === state && countyMapping.locality === locality);
                             mappings.forEach(mapping => {
                                 data.push({
                                     state,
@@ -137,8 +137,8 @@ module.exports = {
                                     // upcomingIncreasesIndex: upcomingIncrease.upcomingIncreasesIndex.trim(),
                                     // indexing,
                                     // lastChange,
-                                })
-                            })
+                                });
+                            });
                         } else {
                             data.push({
                                 state,
