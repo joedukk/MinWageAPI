@@ -24,7 +24,7 @@ module.exports = function (app) {
       if (!req.user) {
         throw new Error('user null');
       }
-      res.redirect("/minWage");
+      res.redirect("/report/minWage?mapCounties=true");
     }
   );
 
