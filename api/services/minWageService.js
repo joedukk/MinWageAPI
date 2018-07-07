@@ -67,17 +67,33 @@ module.exports = {
 
                     // need to check for annual indexing footnote
                     if (upcomingIncreaseMatches1) {
-                        upcomingIncreases.push({
+                        const upcomingIncrease = {
                             to: +(upcomingIncreaseMatches1[1].replace('$', '')),
                             effective: new Date(upcomingIncreaseMatches1[2].trim().replace('*', '')),
                             note: upcomingIncreaseMatches1[2].indexOf('*') !== -1 ? note.replace('*', '').trim() : null,
-                        });
+                        };
+
+                        if (isNaN(upcomingIncrease.to)) {
+                            const error = (`Could not parse upcoming increase row in ${state} ${locality}. '${upcomingIncrease}'`);
+                            console.error(error);
+                            errors.push(error);
+                        } else {
+                            upcomingIncreases.push(upcomingIncrease);
+                        }
                     } else if (upcomingIncreaseMatches2) {
-                        upcomingIncreases.push({
+                        const upcomingIncrease = {
                             to: +(upcomingIncreaseMatches2[1].replace('$', '')),
                             effective: new Date(upcomingIncreaseMatches2[2].trim().replace('*', '')),
                             note: upcomingIncreaseMatches2[2].indexOf('*') !== -1 ? note.replace('*', '').trim() : null,
-                        });
+                        };
+
+                        if (isNaN(upcomingIncrease.to)) {
+                            const error = (`Could not parse upcoming increase row in ${state} ${locality}. '${upcomingIncrease}'`);
+                            console.error(error);
+                            errors.push(error);
+                        } else {
+                            upcomingIncreases.push(upcomingIncrease);
+                        }
                     } else {
                         var error = `Could not parse upcoming increase for ${state} / ${locality}. '${upcomingIncrease}'`;
                         console.error(error);

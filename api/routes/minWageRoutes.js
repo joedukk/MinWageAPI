@@ -30,6 +30,7 @@ module.exports = function (app) {
 
   app.get('/login',
     passport.authenticate('auth0', {}), function (req, res) {
-      res.redirect("/");
+      var redirectTo = req.session.redirectTo ? req.session.redirectTo : '/';
+      res.redirect(redirectTo);
     });
 };

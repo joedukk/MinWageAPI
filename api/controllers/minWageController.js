@@ -2,9 +2,11 @@
 
 var moment = require('moment');
 var minWageService = require('../services/minWageService');
+var orderBy = require('lodash/orderBy');
 
 exports.list_all_minWages = (req, res) => {
     if (!req.isAuthenticated()) {
+        req.session.redirectTo = `${req.originalUrl}${(qs ? `?${qs}` : '')}`;
         res.redirect('/login');
     } else {
         const mapCounties = req.query.mapCounties && req.query.mapCounties.toLowerCase() === 'true';
@@ -17,9 +19,13 @@ exports.list_all_minWages = (req, res) => {
 
 exports.minWages_basic_report = (req, res) => {
     if (!req.isAuthenticated()) {
+        const qs = require('url').parse(req.url).query;
+        req.session.redirectTo = `${req.originalUrl}${(qs ? `?${qs}` : '')}`;
         res.redirect('/login');
     } else {
         var xl = require('excel4node');
+        var fs = require('fs');
+        var statesRefData = JSON.parse(fs.readFileSync('./data/states.json', 'utf8'));
 
         const mapCounties = req.query.mapCounties && req.query.mapCounties.toLowerCase() === 'true';
 
@@ -28,17 +34,25 @@ exports.minWages_basic_report = (req, res) => {
             var wb = new xl.Workbook();
             var ws = wb.addWorksheet(`Min Wage Data ${dt.format('MMMM')} ${dt.format('YY')}`);
 
-            // Create a reusable style
-            var style = wb.createStyle({
+            var baseStyle = wb.createStyle({
                 font: {
                     size: 12
                 },
                 numberFormat: '$#,##0.00; ($#,##0.00); -'
             });
+            var dateStyle = wb.createStyle({
+                font: {
+                    size: 12
+                },
+                numberFormat: 'm/d/yyyy'
+            });
 
-            ws.cell(1, 1).string('State').style(style);
-            ws.cell(1, 2).string('Locality').style(style);
-            ws.cell(1, 3).string('Minimum Wage').style(style);
+            ws.cell(1, 1).string('State').style(baseStyle);
+            ws.cell(1, 2).string('State Abbreviation').style(baseStyle);
+            ws.cell(1, 3).string('Locality').style(baseStyle);
+            ws.cell(1, 4).string('Current Minimum Wage').style(baseStyle);
+            ws.cell(1, 5).string('Next Upcoming').style(baseStyle);
+            ws.cell(1, 6).string('Effective Date').style(baseStyle);
 
             var currentState = null;
             var headerOffset = 2;
@@ -57,11 +71,32 @@ exports.minWages_basic_report = (req, res) => {
                 //     currentState = data.state;
                 //     groupStart = currentRow;
                 // }
-                ws.cell(currentRow, 1).string(data.state).style(style);
-                if (data.locality) {
-                    ws.cell(currentRow, 2).string(data.locality).style(style);
+                ws.cell(currentRow, 1).string(data.state).style(baseStyle);
+
+                if (data.state !== 'Federal') {
+                    const state = statesRefData.find(state => state.name.toLowerCase() === data.state.toLowerCase());
+                    if (state === undefined) {
+                        throw (`Unable to locate abbreviation for ${data.state}`);
+                    }
+
+                    const abbreviation = state.abbreviation;
+                    ws.cell(currentRow, 2).string(abbreviation).style(baseStyle);
                 }
-                ws.cell(currentRow, 3).number(data.minWage).style(style);
+
+                if (data.locality) {
+                    ws.cell(currentRow, 3).string(data.locality).style(baseStyle);
+                }
+
+                ws.cell(currentRow, 4).number(data.minWage).style(baseStyle);
+
+                if (data.upcomingIncrease && data.upcomingIncrease.length > 0) {
+                    const upcomingIncreases = orderBy([...data.upcomingIncrease], 'effective');
+                    const nextIncrease = upcomingIncreases[0];
+                    ws.cell(currentRow, 5).number(nextIncrease.to).style(baseStyle);
+                    if (nextIncrease) {
+                        ws.cell(currentRow, 6).date(moment(nextIncrease.effective).toDate()).style(dateStyle);
+                    }
+                }
             })
 
             wb.write('MinWageData.xlsx', res);
