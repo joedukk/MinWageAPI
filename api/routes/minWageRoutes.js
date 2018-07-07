@@ -12,9 +12,12 @@ module.exports = function (app) {
     })
 
   app.route('/minWage')
-    .get(minWageController.list_all_minWages)
+    .get(minWageController.list_all_minWages);
 
-    
+  app.route('/report/minWage')
+    .get(minWageController.minWages_basic_report);
+
+
   app.get('/callback',
     passport.authenticate('auth0', { failureRedirect: '/login' }),
     function (req, res) {
